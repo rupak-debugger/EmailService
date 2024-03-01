@@ -11,22 +11,28 @@ public class MyEmailService
     : IEmailService
 {
     private readonly EmailSettingOptions _emailSetting;
+    private readonly IWebHostEnvironment _hostingEnvironment;
 
-    public MyEmailService(IOptions<EmailSettingOptions> emailSetting)
+    public MyEmailService(
+        IOptions<EmailSettingOptions> emailSetting,
+        IWebHostEnvironment hostingEnvironment)
     {
         _emailSetting = emailSetting.Value;
+        _hostingEnvironment = hostingEnvironment;
     }
 
     public void SendEmail()
     {
+        string templatePath = Path.Combine(_hostingEnvironment.ContentRootPath, "EmailTemplates/email_template.html");
+        string htmlBody = File.ReadAllText(templatePath);
+
         MimeMessage email = new();
-        email.From.Add(MailboxAddress.Parse(_emailSetting.Mail));
-        email.To.Add(MailboxAddress.Parse("thora.barton@ethereal.email"));
+        email.From.Add(new MailboxAddress(_emailSetting.DisplayName, _emailSetting.Mail));
+        email.To.Add(MailboxAddress.Parse("spencer.stokes@ethereal.email"));
         email.Subject = "email subject";
 
         BodyBuilder bodyBuilder = new();
-        bodyBuilder.HtmlBody = "<div style=\"background-color:#000000;padding:1em;width:50%\">\r\n<center><img src='_imageSource' /></center>\r\n</div>";
-        bodyBuilder.HtmlBody = bodyBuilder.HtmlBody.Replace("_imageSource", "https://assets.bootstrapemail.com/logos/light/square.png");
+        bodyBuilder.HtmlBody = htmlBody;
         email.Body = bodyBuilder.ToMessageBody();
 
         using var smtp = new SmtpClient();
